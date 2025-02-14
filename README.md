@@ -2,12 +2,16 @@
 
 A Python library designed to help you efficiently manage and manipulate your Logseq graphs. Provides tools and utilities for working with Logseq's markdown-based system.
 
+## Disclaimer
+
+This is an untested, unoptimized script that was made for personal use. I decided to let others use it if they want, but please do so at your own risk.
+
 ## Installation
 
 To install the library, you can clone the repository and install the dependencies:
 
 ``` bash
-git clone https://github.com/yourusername/LogseqMdPy.git
+git clone https://github.com/wolfj123/LogseqMdPy.git
 cd LogseqMdPy
 pip install -r requirements.txt
 ```
@@ -16,10 +20,12 @@ pip install -r requirements.txt
 
 
 ``` python
+
+sys.path.append(os.path.abspath(r"path/to/LogseqMdPy"))
 from LogseqMdPy.core import LogseqMdPy
 
 # Initialize the LogseqMdPy object with the path to your Logseq directory
-logseq = LogseqMdPy("path/to/your/logseq/directory")
+logseq = LogseqMdPy(r"path/to/your/logseq/directory")
 
 # Example usage of the methods
 logseq_dir = logseq.get_logseq_dir()

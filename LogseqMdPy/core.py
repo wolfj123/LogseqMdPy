@@ -1,7 +1,8 @@
 import os
 
-from LogseqMdPy.utils import name_to_filename, get_card_props
-from .models import LogseqPage
+from LogseqMdPy.utils import *
+from LogseqMdPy.graph import *
+from .models import LogseqPage, LogseqBlock
 
 class LogseqMdPy:
     def __init__(self, logseq_directory):
@@ -86,3 +87,54 @@ class LogseqMdPy:
             b.delete_properties(get_card_props())
             p = b.get_page()
             p.write_to_file()
+
+    # Expose utility functions
+    def get_reference_pattern(self):
+        return get_reference_pattern()
+
+    def get_tag_pattern(self):
+        return get_tag_pattern()
+
+    def name_to_filename(self, name):
+        return name_to_filename(name)
+
+    def filename_to_name(self, filename):
+        return filename_to_name(filename)
+
+    def count_leading_tabs(self, text):
+        return count_leading_tabs(text)
+
+    def sanitize_filename(self, filename):
+        return sanitize_filename(filename)
+
+    def h(self, text, level):
+        return h(text, level)
+
+    def bold(self, text):
+        return bold(text)
+
+    def italic(self, text):
+        return italic(text)
+
+    def tag(self, text):
+        return tag(text)
+
+    def is_page_ref(self, text):
+        return is_page_ref(text)
+
+    def page_ref(self, text):
+        return page_ref(text)
+
+    # Expose graph functions
+    def create_networkx_directed_graph_from_pages(self, pages):
+        return create_networkx_directed_graph_from_pages(pages)
+
+    def create_gephi_file_from_pages(self, pages, output_file):
+        return create_gephi_file_from_pages(pages, output_file)
+    
+    # Expose constructors for LogseqPage and LogseqBlock
+    def LogseqPage(self, file_path):
+        return LogseqPage(file_path)
+
+    def LogseqBlock(self):
+        return LogseqBlock()
