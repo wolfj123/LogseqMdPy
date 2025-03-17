@@ -1,6 +1,6 @@
 import os
 import re
-from .utils import filename_to_name, count_leading_tabs, get_reference_pattern, get_tag_pattern, get_tag_ref_pattern
+from .utils import filename_to_name, count_leading_tabs, get_properties_pattern, get_reference_pattern, get_tag_pattern, get_tag_ref_pattern
 
 class LogseqBlock:
     """
@@ -17,6 +17,19 @@ class LogseqBlock:
         self.properties = {}
         self.refs = []
         self.refs_inherited = []
+
+    def copy(self):
+        new_block = LogseqBlock()
+        new_block.set_text(self.get_text())
+        new_block.set_page(self.get_page())
+        new_block.properties = self.get_properties()
+        new_block.refs = self.get_refs()
+        new_block.refs_inherited = self.refs_inherited
+        new_block.parent = self.get_parent()
+        for child in self.get_children():
+            new_child = child.copy()
+            new_child.set_parent(new_block)
+        return new_block
     
     def get_height(self):
         result = 1
@@ -51,12 +64,11 @@ class LogseqBlock:
         return self.properties
 
     def delete_properties(self, properties):
-        text = self.get_text()
+        new_text = self.get_text()
         for property in properties:
-            new_text = re.sub(r"(\t)*( )*" + property + r"::(.*)((\n)+|$)", "", text)
-            text = new_text
+            new_text = re.sub(r"(\t)*( )*" + property + r"::(.*)((\n)+|$)", "", new_text)
 
-        self.set_text(text)
+        self.set_text(new_text)
 
     def set_text(self, text):
         self.refs = []
@@ -64,7 +76,7 @@ class LogseqBlock:
 
         # props
         for line in text.splitlines():
-            if re.search(r"[a-zA-Z0-9]+::(.*)", line):
+            if re.search(get_properties_pattern(), line):
                 if not "{" in line:
                     split = line.split("::", maxsplit = 1)
                     prop = split[0].lstrip()
@@ -190,6 +202,23 @@ class LogseqBlock:
             result = result + child.get_all_blocks_with_refs(refs, include_inherited_refs)
         return result
 
+    def remove_properties_recursively(self):
+        self.delete_properties(self.get_properties().keys())
+        self.properties = {}
+        for child in self.get_children():    
+            child.remove_properties_recursively()
+    
+    def remove_all_refs_recursively(self):
+        new_text = self.get_text()
+        self.refs = []
+        self.refs_inherited = []
+        new_text = re.sub(get_reference_pattern(), lambda match: match.group(1), new_text)
+        new_text = re.sub(get_tag_ref_pattern(), "", new_text)
+        new_text = re.sub(get_tag_pattern(), "", new_text)
+        self.set_text(new_text)
+        
+        for child in self.get_children():
+            child.remove_all_refs_recursively()
 
 class LogseqPage:
     """
@@ -242,10 +271,15 @@ class LogseqPage:
                         text = ""
                 else:
                     text = line
+
+                # Check if there are more lines to add to the text    
+                in_code_block = '```' in line
                 if i < len(lines) - 1:
                     j = 1
                     next_line = lines[i + j]
-                    while not next_line.lstrip().startswith("-"):
+                    while (not next_line.lstrip().startswith("-")) or in_code_block:
+                        if '```' in text:
+                            in_code_block = not in_code_block
                         text += next_line
                         j += 1
                         if i + j == len(lines):
@@ -270,11 +304,26 @@ class LogseqPage:
         for depth_0_block in blocks_by_depth[0]:
             self.blocks.append(depth_0_block)
         
+    def copy(self):
+        new_page = LogseqPage(self.get_file())
+        new_page.blocks = []
+        for block in self.get_blocks():
+            new_block = block.copy()
+            new_block.set_page(new_page)
+            new_page.blocks.append(new_block)
+        return new_page
+
     def get_page_name(self):
         return self.name
+    
+    def set_page_name(self, name):
+        self.name = name
 
     def get_file(self):
         return self.filename
+
+    def set_file(self, filename):
+        self.filename = filename
 
     def is_journal(self):
         return self.is_journal
@@ -341,3 +390,11 @@ class LogseqPage:
         for block in self.get_blocks():
             result = result + block.get_all_blocks_with_refs(refs, include_inherited_refs)
         return result
+
+    def remove_all_properties(self):
+        for block in self.get_blocks():
+            block.remove_properties_recursively()
+    
+    def remove_all_references(self):
+        for block in self.get_blocks():
+            block.remove_all_refs_recursively()

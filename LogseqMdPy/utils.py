@@ -29,6 +29,10 @@ def get_card_props():
 #     print(f"Error changing directory: {e}")
 
 
+properties_pattern = r"[a-zA-Z0-9]+::(.*)"
+def get_properties_pattern():
+    return properties_pattern
+
 reference_pattern = r"\[\[(.*?)\]\]"
 def get_reference_pattern():
     return reference_pattern

@@ -1,4 +1,5 @@
 import os
+import pypandoc
 
 from LogseqMdPy.utils import *
 from LogseqMdPy.graph import *
@@ -12,12 +13,10 @@ class LogseqMdPy:
         return self.logseq_dir
 
     def get_page_by_name(self, name):
-        name = name_to_filename(name)
-        all_files = self.get_all_files()
-        for file in all_files:
-            base_name, extension = os.path.splitext(file)
-            if base_name == name:
-                return LogseqPage(file)
+        all_pages = self.get_all_pages()
+        for page in all_pages:
+            if page.get_page_name() == name:
+                return page
         return None
 
     def get_all_files(self, pages = True, journals = True):
@@ -138,3 +137,41 @@ class LogseqMdPy:
 
     def LogseqBlock(self):
         return LogseqBlock()
+    
+    def export_to_html(self, page, output_dir, css_file = None):
+
+        # TODO:
+        # - Images
+        # - code blocks
+        # - Cleanup of TODOs and their hidden data such as:    :LOGBOOK: CLOCK: [2025-03-16 Sun 11:52:33] :END:
+        # - Adding a special property to skip a block from export
+
+        # https://chatgpt.com/c/67d7cbbe-da5c-800b-bcb5-bb29dcfeface
+        page_copy = page.copy()
+        page_copy.remove_all_properties()
+        page_copy.remove_all_references()
+        page_copy.set_file(os.path.join(self.get_logseq_dir(), "tmpFileForExport.md"))
+        page_copy.write_to_file()
+        html_content = pypandoc.convert_file(page_copy.get_file(), 'html', format='md')
+        
+        if css_file:
+            with open(css_file, "r") as f:
+                css_content = f.read()
+                html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>{css_content}</style>
+</head>
+<body>
+    {html_content}
+</body>
+</html>"""    
+
+        output_html = os.path.join(output_dir, f"{page.get_page_name()}.html")
+        with open(output_html, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        os.remove(page_copy.get_file())
+        print(f"Converted {page.get_file()} to {output_html} with CSS styling.")
+        
+
