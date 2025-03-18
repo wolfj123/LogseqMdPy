@@ -278,7 +278,7 @@ class LogseqPage:
                     j = 1
                     next_line = lines[i + j]
                     while (not next_line.lstrip().startswith("-")) or in_code_block:
-                        if '```' in text:
+                        if '```' in next_line:
                             in_code_block = not in_code_block
                         text += next_line
                         j += 1
