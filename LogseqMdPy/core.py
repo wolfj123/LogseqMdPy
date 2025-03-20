@@ -1,5 +1,6 @@
 import os
 import pypandoc
+import re
 
 from LogseqMdPy.utils import *
 from LogseqMdPy.graph import *
@@ -139,17 +140,28 @@ class LogseqMdPy:
         return LogseqBlock()
     
     def export_to_html(self, page, output_dir, css_file = None):
-
+        # Change the current working directory to the directory of the page's file
+        # page_dir = os.path.dirname(page.get_file())
+        # os.chdir(page_dir)
+        
         # TODO:
-        # - Images
-        # - code blocks
-        # - Cleanup of TODOs and their hidden data such as:    :LOGBOOK: CLOCK: [2025-03-16 Sun 11:52:33] :END:
         # - Adding a special property to skip a block from export
 
         # https://chatgpt.com/c/67d7cbbe-da5c-800b-bcb5-bb29dcfeface
         page_copy = page.copy()
         page_copy.remove_all_properties()
         page_copy.remove_all_references()
+        page_copy.remove_logs()
+        page_copy.delete_empty_blocks()
+        page_copy.lower_assets_dir()
+        images = page_copy.get_all_images()
+        image_paths = []
+        for image in images:
+            matches = re.findall(r'!\[.*?\]\((.*?)\)', image)
+            for match in matches:
+                if not os.path.isabs(match):
+                    abs_path = os.path.abspath(os.path.join(self.get_logseq_dir(), match))
+                    image_paths.append(abs_path)
         page_copy.set_file(os.path.join(self.get_logseq_dir(), "tmpFileForExport.md"))
         page_copy.write_to_file()
         html_content = pypandoc.convert_file(page_copy.get_file(), 'html', format='md')
@@ -167,8 +179,20 @@ class LogseqMdPy:
     {html_content}
 </body>
 </html>"""    
+        # Create a new directory with the same name as the filename (without extension)
+        output_subdir = os.path.join(output_dir, page.get_page_name())
+        os.makedirs(output_subdir, exist_ok=True)
+        assets_subdir = os.path.join(output_dir, output_subdir, "assets")
+        os.makedirs(assets_subdir, exist_ok=True)
 
-        output_html = os.path.join(output_dir, f"{page.get_page_name()}.html")
+        for image_path in image_paths:
+            if os.path.exists(image_path):
+                dest_path = os.path.join(assets_subdir, os.path.basename(image_path))
+                with open(image_path, "rb") as src_file:
+                    with open(dest_path, "wb") as dest_file:
+                        dest_file.write(src_file.read())
+
+        output_html = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.html")
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
         os.remove(page_copy.get_file())

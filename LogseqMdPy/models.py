@@ -220,6 +220,37 @@ class LogseqBlock:
         for child in self.get_children():
             child.remove_all_refs_recursively()
 
+    def remove_logs(self):
+        new_text = self.get_text()
+        logbook_regex = r":LOGBOOK:\s*(.*\s*)*:END:"
+        new_text = re.sub(logbook_regex, "", new_text)
+        self.set_text(new_text)
+        for child in self.get_children():
+            child.remove_logs()
+
+    def delete_empty_blocks_recursivley(self):
+        new_children = []
+        for child in self.get_children():
+            child.delete_empty_blocks_recursivley()
+            if child.get_text().strip() != "" or len(child.get_children()) > 0:
+                new_children.append(child)
+        self.children = new_children
+    
+    def lower_assets_dir(self):
+        text = self.get_text()
+        new_text = text.replace("../assets/", "assets/".lower())
+        self.set_text(new_text)
+        for child in self.get_children():
+            child.lower_assets_dir()
+    
+    def get_all_images(self, images):
+        match = re.findall(r"!\[.*\]\(.*\)", self.get_text())
+        for m in match:
+            images.append(m)
+        for child in self.get_children():
+            child.get_all_images(images)
+        return images
+        
 class LogseqPage:
     """
     A class representing a node in a tree structure.
@@ -398,3 +429,26 @@ class LogseqPage:
     def remove_all_references(self):
         for block in self.get_blocks():
             block.remove_all_refs_recursively()
+
+    def remove_logs(self):
+        for block in self.get_blocks():
+            block.remove_logs()
+
+    def delete_empty_blocks(self):
+        new_blocks = []
+        for block in self.get_blocks():
+            if block.get_text().strip() != "" or len(block.get_children()) > 0:
+                new_blocks.append(block)
+                block.delete_empty_blocks_recursivley()
+        self.blocks = new_blocks
+
+    def lower_assets_dir(self):
+       for block in self.get_blocks():
+            block.lower_assets_dir()
+            
+    def get_all_images(self): 
+        images = []
+        for block in self.get_blocks():
+            block.get_all_images(images)
+        return images
+
