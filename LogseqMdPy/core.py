@@ -1,3 +1,4 @@
+import base64
 import os
 import pypandoc
 import re
@@ -172,8 +173,7 @@ class LogseqMdPy:
             matches = re.findall(r'!\[.*?\]\((.*?)\)', image)
             for match in matches:
                 if not os.path.isabs(match):
-                    abs_path = os.path.abspath(os.path.join(self.get_logseq_dir(), match))
-                    image_paths.append(abs_path)
+                    image_paths.append(match)
 
         page_copy.set_file(os.path.join(self.get_logseq_dir(), tmp_filename))
         page_copy.write_to_file()
@@ -204,7 +204,20 @@ class LogseqMdPy:
 <body>
     {html_content}
 </body>
-</html>"""    
+</html>"""
+                
+        # Convert images to base64 and replace their paths in the HTML content
+        for image_path in image_paths:
+            if os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+                    image_extension = os.path.splitext(image_path)[1][1:]  # Get the file extension without the dot
+                    html_content = html_content.replace(
+                    image_path,
+                    f"data:image/{image_extension};base64,{base64_image}"
+                    )
+
+
         # <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-nginx.min.js"></script> #doesnt work
 
         # Minify the HTML content
@@ -213,29 +226,31 @@ class LogseqMdPy:
         # Replace "sourceCode" with "language-" in the HTML content
         html_content = html_content.replace("sourceCode ", "language-")
         # Create a new directory with the same name as the filename (without extension)
-        output_subdir = os.path.join(output_dir, page.get_page_name())
-        os.makedirs(output_subdir, exist_ok=True)
-        assets_subdir = os.path.join(output_dir, output_subdir, "assets")
-        os.makedirs(assets_subdir, exist_ok=True)
+        # output_subdir = os.path.join(output_dir, page.get_page_name())
+        # os.makedirs(output_subdir, exist_ok=True)
+        
+        
+        # Create assets directory and copy images        
+        # assets_subdir = os.path.join(output_dir, output_subdir, "assets")
+        # os.makedirs(assets_subdir, exist_ok=True)
+        # for image_path in image_paths:
+        #     if os.path.exists(image_path):
+        #         dest_path = os.path.join(assets_subdir, os.path.basename(image_path))
+        #         with open(image_path, "rb") as src_file:
+        #             with open(dest_path, "wb") as dest_file:
+        #                 dest_file.write(src_file.read())
 
-        for image_path in image_paths:
-            if os.path.exists(image_path):
-                dest_path = os.path.join(assets_subdir, os.path.basename(image_path))
-                with open(image_path, "rb") as src_file:
-                    with open(dest_path, "wb") as dest_file:
-                        dest_file.write(src_file.read())
-
-        output_html = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.html")
+        output_html = os.path.join(output_dir, f"{page.get_page_name()}.html")
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
         remove_blank_lines(output_html)
-        # os.remove(page_copy.get_file())
+        os.remove(page_copy.get_file())
 
         # Move the temporary markdown file to the output directory and rename it
-        output_md = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.md")
-        if os.path.exists(output_md):
-            os.remove(output_md)
-        os.rename(page_copy.get_file(), output_md)
+        # output_md = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.md")
+        # if os.path.exists(output_md):
+        #     os.remove(output_md)
+        # os.rename(page_copy.get_file(), output_md)
 
         print(f"Converted {page.get_file()} to {output_html} with CSS styling.")
         
