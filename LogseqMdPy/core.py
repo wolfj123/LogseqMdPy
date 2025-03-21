@@ -143,11 +143,8 @@ class LogseqMdPy:
         # Change the current working directory to the directory of the page's file
         # page_dir = os.path.dirname(page.get_file())
         # os.chdir(page_dir)
-        
-        # TODO:
-        # - Adding a special property to skip a block from export
+        tmp_filename = "tmpFileForExport.md"
 
-        # https://chatgpt.com/c/67d7cbbe-da5c-800b-bcb5-bb29dcfeface
         page_copy = page.copy()
         page_copy.delete_blocks_with_property("export","false")
         page_copy.remove_all_properties()
@@ -155,6 +152,7 @@ class LogseqMdPy:
         page_copy.remove_logs()
         page_copy.delete_empty_blocks()
         page_copy.lower_assets_dir()
+        page_copy.remove_image_alt_text()
         images = page_copy.get_all_images()
         image_paths = []
         for image in images:
@@ -163,7 +161,8 @@ class LogseqMdPy:
                 if not os.path.isabs(match):
                     abs_path = os.path.abspath(os.path.join(self.get_logseq_dir(), match))
                     image_paths.append(abs_path)
-        page_copy.set_file(os.path.join(self.get_logseq_dir(), "tmpFileForExport.md"))
+
+        page_copy.set_file(os.path.join(self.get_logseq_dir(), tmp_filename))
         page_copy.write_to_file()
         html_content = pypandoc.convert_file(page_copy.get_file(), 'html', format='md')
         
@@ -180,6 +179,7 @@ class LogseqMdPy:
     {html_content}
 </body>
 </html>"""    
+                
         # Create a new directory with the same name as the filename (without extension)
         output_subdir = os.path.join(output_dir, page.get_page_name())
         os.makedirs(output_subdir, exist_ok=True)
@@ -196,7 +196,14 @@ class LogseqMdPy:
         output_html = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.html")
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
-        os.remove(page_copy.get_file())
+        # os.remove(page_copy.get_file())
+
+        # Move the temporary markdown file to the output directory and rename it
+        output_md = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.md")
+        if os.path.exists(output_md):
+            os.remove(output_md)
+        os.rename(page_copy.get_file(), output_md)
+
         print(f"Converted {page.get_file()} to {output_html} with CSS styling.")
         
 

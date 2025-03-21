@@ -238,7 +238,7 @@ class LogseqBlock:
     
     def lower_assets_dir(self):
         text = self.get_text()
-        new_text = text.replace("../assets/", "assets/".lower())
+        new_text = text.replace("../assets/", "assets/")
         self.set_text(new_text)
         for child in self.get_children():
             child.lower_assets_dir()
@@ -259,6 +259,12 @@ class LogseqBlock:
             new_children.append(child)
             child.delete_blocks_with_property(prop, value)
         self.children = new_children
+
+    def remove_image_alt_text(self):
+        for block in self.get_children():
+            new_text = block.get_text()
+            new_text = new_text.replace("[image.png]", "[]")
+            block.set_text(new_text)
 
 class LogseqPage:
     """
@@ -469,3 +475,7 @@ class LogseqPage:
             new_blocks.append(block)
             block.delete_blocks_with_property(prop, value)
         self.blocks = new_blocks
+
+    def remove_image_alt_text(self):
+        for block in self.get_blocks():
+            block.remove_image_alt_text()
