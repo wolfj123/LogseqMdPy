@@ -5,6 +5,18 @@ import re
 from LogseqMdPy.utils import *
 from LogseqMdPy.graph import *
 from .models import LogseqPage, LogseqBlock
+# from htmlmin import minify
+
+
+def remove_blank_lines(file_path):
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Remove lines that are completely empty or only contain spaces/tabs
+    cleaned_lines = [line for line in lines if not re.match(r"^\s*$", line)]
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.writelines(cleaned_lines)
 
 class LogseqMdPy:
     def __init__(self, logseq_directory):
@@ -139,6 +151,7 @@ class LogseqMdPy:
     def LogseqBlock(self):
         return LogseqBlock()
     
+
     def export_to_html(self, page, output_dir, css_file = None):
         # Change the current working directory to the directory of the page's file
         # page_dir = os.path.dirname(page.get_file())
@@ -194,6 +207,9 @@ class LogseqMdPy:
 </html>"""    
         # <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-nginx.min.js"></script> #doesnt work
 
+        # Minify the HTML content
+        # html_content = minify(html_content, remove_empty_space=True)
+        
         # Replace "sourceCode" with "language-" in the HTML content
         html_content = html_content.replace("sourceCode ", "language-")
         # Create a new directory with the same name as the filename (without extension)
@@ -212,6 +228,7 @@ class LogseqMdPy:
         output_html = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.html")
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
+        remove_blank_lines(output_html)
         # os.remove(page_copy.get_file())
 
         # Move the temporary markdown file to the output directory and rename it
