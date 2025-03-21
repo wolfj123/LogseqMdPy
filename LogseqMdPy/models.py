@@ -251,6 +251,15 @@ class LogseqBlock:
             child.get_all_images(images)
         return images
         
+    def delete_blocks_with_property(self, prop, value):
+        new_children = []
+        for child in self.get_children():
+            if prop in child.get_properties() and value in child.get_properties()[prop]:
+                continue
+            new_children.append(child)
+            child.delete_blocks_with_property(prop, value)
+        self.children = new_children
+
 class LogseqPage:
     """
     A class representing a node in a tree structure.
@@ -452,3 +461,11 @@ class LogseqPage:
             block.get_all_images(images)
         return images
 
+    def delete_blocks_with_property(self, prop, value):
+        new_blocks = []
+        for block in self.get_blocks():
+            if prop in block.get_properties() and value in block.get_properties()[prop]:
+                continue
+            new_blocks.append(block)
+            block.delete_blocks_with_property(prop, value)
+        self.blocks = new_blocks

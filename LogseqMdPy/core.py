@@ -149,6 +149,7 @@ class LogseqMdPy:
 
         # https://chatgpt.com/c/67d7cbbe-da5c-800b-bcb5-bb29dcfeface
         page_copy = page.copy()
+        page_copy.delete_blocks_with_property("export","false")
         page_copy.remove_all_properties()
         page_copy.remove_all_references()
         page_copy.remove_logs()
