@@ -152,13 +152,7 @@ class LogseqMdPy:
     def LogseqBlock(self):
         return LogseqBlock()
     
-
-    def export_to_html(self, page, output_dir, css_file = None):
-        # Change the current working directory to the directory of the page's file
-        # page_dir = os.path.dirname(page.get_file())
-        # os.chdir(page_dir)
-        tmp_filename = "tmpFileForExport.md"
-
+    def page_copy_for_export(self, page):
         page_copy = page.copy()
         page_copy.delete_blocks_with_property("export","false")
         page_copy.remove_all_properties()
@@ -167,10 +161,19 @@ class LogseqMdPy:
         page_copy.delete_empty_blocks()
         page_copy.lower_assets_dir()
         page_copy.remove_image_alt_text()
+        return page_copy
+
+    def export_to_html(self, page, output_dir, css_file = None):
+        # Change the current working directory to the directory of the page's file
+        # page_dir = os.path.dirname(page.get_file())
+        # os.chdir(page_dir)
+        tmp_filename = "tmpFileForExport.md"
+
+        page_copy = self.page_copy_for_export(page)
         images = page_copy.get_all_images()
         image_paths = []
         for image in images:
-            matches = re.findall(r'!\[.*?\]\((.*?)\)', image)
+            matches = re.findall(r'!\[.*?\]\((.*)\)', image)
             for match in matches:
                 if not os.path.isabs(match):
                     image_paths.append(match)
@@ -240,17 +243,19 @@ class LogseqMdPy:
         #             with open(dest_path, "wb") as dest_file:
         #                 dest_file.write(src_file.read())
 
-        output_html = os.path.join(output_dir, f"{page.get_page_name()}.html")
+        sanitized_filename = page.get_page_name().replace("\\", "--")
+        output_html = os.path.join(output_dir, f"{sanitized_filename}.html")
         with open(output_html, "w", encoding="utf-8") as f:
             f.write(html_content)
         remove_blank_lines(output_html)
-        os.remove(page_copy.get_file())
+        
 
+        # os.remove(page_copy.get_file())
         # Move the temporary markdown file to the output directory and rename it
-        # output_md = os.path.join(output_dir, output_subdir, f"{page.get_page_name()}.md")
-        # if os.path.exists(output_md):
-        #     os.remove(output_md)
-        # os.rename(page_copy.get_file(), output_md)
+        output_md = os.path.join(output_dir, f"{sanitized_filename}.md")
+        if os.path.exists(output_md):
+            os.remove(output_md)
+        os.rename(page_copy.get_file(), output_md)
 
         print(f"Converted {page.get_file()} to {output_html} with CSS styling.")
         
